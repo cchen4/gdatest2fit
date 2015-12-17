@@ -1,0 +1,17 @@
+{
+    "contents" : "\\name{ncv.lasso}\n\\alias{ncv.lasso}\n\\title{\nA nested cross validation procedure for binomial responese variable and select m genes/covariates for cross validation\n}\n\\description{\n%%  ~~ A concise (1-5 lines) description of what the function does. ~~\nThis function requires on specifying the number folds inner loop and outer loop\nit also need to includes number of m covariates in the variable selection \\\\\nIt would generate the plots of ROC curve and AUC statistics\n}\n\n\\usage{\nncv.lasso(gex, k1, k2, m)\n}\n\\arguments{\n  \\item{gex}{a data matrix or frame that used to fit the lasso model with more than 2 covariates}\n  \\item{k1}{a numerical value that is greater than 0 but less than # rows of whole data}\n  \\item{k2}{a numerical value that is greater than 0 but less than # rows of test data}\n  \\item{m}{a numerical value that is greater than 0 but less than max mumber of genes/covariates}\n}\n\\value{\n  A data matrix of response and predicted values will be returned to be used for futher analysis, such as calculating the error rate/mse. If a response is bernoulli and predicted values will be probability for logistic model. A list of non zero fitted covariates under lasso models will be printed out.\n}\n\n\\author{Chongshu Chen}\n\\examples{\n  data(subBRCA)\n  status <-  c(rep(1, 785), rep(0, 230))\n  testdat <- data.frame(log2(t(subBRCA)+1), status)\n  cv.result <- ncv.lasso (gex=testdat, k1=3, k2=5, m=5)\n}\n\n\\keyword{crossvalidation}\n% Add one or more standard keywords, see file 'KEYWORDS' in the\n% R documentation directory.\n\\keyword{glm}\n\\keyword{lasso}\n\\keyword{nested}\n",
+    "created" : 1450335598721.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3092082289",
+    "id" : "D2D54270",
+    "lastKnownWriteTime" : 1450336466,
+    "path" : "D:/Cloud/OneDrive/Documents/Coursework/Fall 2015/BST550 Genomic Data Analysis/GDA-Project/gdatest2fit/man/ncv.lasso.Rd",
+    "project_path" : "man/ncv.lasso.Rd",
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "type" : "r_doc"
+}

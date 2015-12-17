@@ -1,0 +1,17 @@
+{
+    "contents" : "\\name{rowWilcox}\n\\alias{rowWilcox}\n%- Also NEED an '\\alias' for EACH other topic documented here.\n\\title{Perform row wilcoxon test to return a set of p-values\n}\n\\description{\nThis function performs wilcoxcon rank sum test for each row of data matrix/frame and return a p value\n}\n\\usage{\nrowWilcox(mat, ind)\n}\n\\arguments{\n  \\item{mat}{a class of data frame or data matrix}\n  \\item{ind}{a vector of indicator of zero and one to distinguish the samples for column vectors. It should be consisted value of 0 and 1}\n}\n\\value{\n  a set of p-values will be returned from wilcoxcon tests\n}\n\\author{Chongshu Chen}\n\\examples{\n  testdat <- matrix (rnorm(1000, 5, 2), ncol=100)\n  id <- rep(c(1,0), 50)\n  rowWilcox (mat=testdat, ind=id)\n}\n\\keyword{rowWilcox}\n% Add one or more standard keywords, see file 'KEYWORDS' in the\n% R documentation directory.\n\\keyword{wilcoxon}\n\\keyword{non parametric}% __ONLY ONE__ keyword per line\n\n\n",
+    "created" : 1450335622369.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "849889774",
+    "id" : "809A2168",
+    "lastKnownWriteTime" : 1450315874,
+    "path" : "D:/Cloud/OneDrive/Documents/Coursework/Fall 2015/BST550 Genomic Data Analysis/GDA-Project/gdatest2fit/man/rowWilcox.Rd",
+    "project_path" : "man/rowWilcox.Rd",
+    "properties" : {
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "type" : "r_doc"
+}

@@ -1,0 +1,17 @@
+{
+    "contents" : "\\name{resample}\n\\alias{resample}\n\\title{\nrandom labeling sample id and use to create subsamples from original data\n}\n\\description{\n%%  ~~ A concise (1-5 lines) description of what the function does. ~~\nThis function requires on specifying the number of k samples with parameter K\\\\\nIt would generate random seeds and assign subsample id for each row of data\\\\\nIt can be used for k fold crossvalidation or random sampling from origianl data without replacement\n}\n\n\\usage{\nresample(data, K )\n}\n\\arguments{\n  \\item{data}{a data matrix or frame that used to create subsamples}\n  \\item{K}{a numerical value that is greater than 0 but less than # rows of data}\n}\n\\value{\n  A vector of sample id (labels) will be created. Each row of data is belonged to each subsample. we can build a subsample of data from original data. Thus we can use the sample labels to build the dataset for cross vailidataion.\n}\n\\author{Chongshu Chen}\n\\examples{\n  testdat <- data.frame(matrix (rnorm(1000, 5, 2), ncol=10))\n  sampleid <- resample (data=testdat, K=10)\n}\n\\keyword{sample}\n% Add one or more standard keywords, see file 'KEYWORDS' in the\n% R documentation directory.\n\\keyword{random}\n",
+    "created" : 1450335628627.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3679272532",
+    "id" : "571FBF5",
+    "lastKnownWriteTime" : 1450298950,
+    "path" : "D:/Cloud/OneDrive/Documents/Coursework/Fall 2015/BST550 Genomic Data Analysis/GDA-Project/gdatest2fit/man/resample.Rd",
+    "project_path" : "man/resample.Rd",
+    "properties" : {
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "type" : "r_doc"
+}

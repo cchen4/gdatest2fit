@@ -1,0 +1,409 @@
+---
+title: "Multiple testing and model fitting for identifying significant genes for predicting breast receptor status along with cross validation techniques for performance evaluation"
+author: ["Chongshu Chen"]
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Comparison of Significant Analysis of RNA-seq Data for Predicting Clinical Outcome (gdatest2fit)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+output: 
+  BiocStyle::html_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, 
+                      warning=FALSE, message=FALSE)
+```
+
+# Introduction
+
+In this vignette we demonstrate the functionality of the ("gdatest2fit") R package. This package uses data from a reprocessed RNA-Seq data for 9264 tumor samples and 741 normal samples across 24 cancer types from the Cancer Genome Atlas with "Rsubread" (gse62444). Note that Rsubread is an open source R package that has shown high concordance with other existing methods of alignment and summarization, but is simple to use and available from Bioconductor.
+
+## Background
+
+As experimental costs decrease, large scale RNA-seq experiments are becoming increasingly routine, particularly in characterizing the genome wide dynamic regulation of gene expression provides valuable insight into the dynamic mechanisms underlying the biological processes being observed. However, a proper statistical analysis of genome data requires the use of more sophisticated tools and complex statistical models. For example, there are problems due to multiple comparisons increased by catering for changing effects. There exists different significance methods for analyzing RNA seq data to identify differential expressed genes. In particular, we would like to investigate on using logistic predicting models with significant analysis, Lasso penalized regression, Deseq2 to detect significance of genes that predict the breast carcinoma estrogen receptor status. These methods can be applied to the typical types of comparisons and sampling schemes in RNA-seq data and extend them to more complicated situations in Genomic data analysis. We further evaluate the reliability of proposed methods through using the cross validation techniques.
+
+In fact, several open-source packages such as Deseq, edgeR, and vooms take count values as input to identify significant reads count for each gene. We developed r pkg ("gdatest2fit"), R/Bioconductor package to use multiple testing procedure with FDR control and apply GLM model fitting procedure for determining the significant genes that predict clinical outcome, such as breast receptor status along with cross validation techniques for assessing the true performance of fitted models.
+
+# Statistical Methods
+
+## Logistic predicting models
+
+We want to construct a set of biomarkers that will predict breast receptor status using gene expression levels. Consider the following procedure as fitting a logistic regression model using breast cancer receptor indicator as the outcome and select the most differential expressed genes as the predictors. Suppose $x = (x_1,...,x_k)$ is a vector of gene expression levels for a given subject. We will have the linear predictor term
+\begin{equation}
+\eta = \beta_0 + \beta_1 x_1 + ... + \beta_k x_k
+\end{equation}
+In a logistic regression model, we assume that the probability of recurrence give gene expression level x is
+\begin{center}
+$ Pr(Y =1 \mid x) = \phi(\eta)$.
+\end{center}
+We will  evaluate the model by implementing gene selection procedure inside the cross-valuation method. A design of procedure is given as following:\\
+(a) Assign each row of data matrix/frame with label id with "resample" function
+(b) Select rows with same label id as the test data, and the remaining data as the training data. \\
+(b) Select the most significant genes according to Wilcoxon rank sum test from using training data only.\\
+(c) Evaluate the risk score, the linear predictor term $\eta$ for subjects making up the test data.\\
+(d) Estimate the predictive outcomes under the model for all test set and repeat above steps.\\
+
+## LASSO models
+
+We further investigate data with a penalized regression method to detect significance of genes that predict the recurrence of cancer event. A simple explanation of the Lasso regression model as giving a set of input measurements $x_1, x_2, ...,x_k$ and an outcome measurement y, the lasso fits a linear model
+\begin{equation}
+Y = \beta_0 + \beta_1 x_1 + ... + \beta_k x_k
+\end{equation}
+subject to minimize $\sum(y_i - \beta^T x_i)^2 + \lambda \sum \mid \beta_j \mid$. It means that the criterion is not only to minimize $\sum(y-\hat{y})^2 )$, but also subject to a constraint that $\sum{\mid b_k \mid} \leq$ B, for some constant value B. The first part of sum is residual sum of squares, which is taken over observations in the dataset. The parameter $\lambda$ is a tuning parameter. In general, we would include the $\lambda$ in B. When "B" is large enough, the constraint has no effect and the solution is just the usual multiple linear least squares regression of y on $x_1, x-2, ...x_k$. When for smaller values of B,  some of the coefficients $\beta_j$ are shrunk to zero.  In addition to that, we requires to use cross-validation to estimate the optimal value for $\lambda$. Thus, we extend the cross validation procedure with a method of nested cross-validation approach to evaluate robustness of the LASSO model in predicting the disease state for women. The nested cross valuation not only selects the optimal lambda, but also evaluates the accuracy of prediction as the same time. The basic idea is that we implement a cross validation procedure in an inner loop to choose the optimal $\lambda$ value, then we make an outer loop function to fit the LASSO model at the optimal $\lambda$ and validate the error rate with another cross validation procedure. This method would set up strong penalty for fitting models. We would expect the AUC statistic would be lower than previous cross validation procedure. Therefore, we can measure the true prediction power of LASSO model and determine the "good" genes that have true predicting power.
+
+## Statistical Analysis
+
+Two analysis of BRCA tissues sample are carried out under gdatest2fit package and deseq2 package. The Deseq2 package fit the negative binomial distribution to count data. The detail of statistical method is referred to Deseq2. 
+
+# Analysis of BRCA samples 
+
+## Data Set
+
+In the following, we will use three data sets included in the r gdatest2fit package. The first was generated by Rsubread package, which includes BRCA tumor samples from the Cancer Genome Atlas. The second data was clinical outcomes dataset. The last data set is subset of BRCA tumor dataset. The first one includes 233368 genes with 1015 samples.
+
+We first load the package and data.
+
+```{r eval=T, load_gdatest2fit}
+## Load libraries
+library('gdatest2fit')
+library(genefilter)
+library(xtable)
+library(boot)
+library(pROC)
+library(verification)
+library(glmnet)
+```
+
+```{r eval=T, load_example_data}
+### clinical data
+data(cBRCA)
+### gene expression in BRCA tummor sample data
+data(BRCA)
+data(subBRCA)
+
+```
+
+Each of the data sets includes 1119 matched samples IDs. There are 315 clinical variables are measured for all 1119 samples. however, there are missing values for certain clinical variables as we expect. We are interesting to determine genes that are significant in predicting the breast carcinoma estrogen receptor status. We only include the positive and negative receptor status in this analysis. Hereby, we remove the not evaluated status from our study.
+
+```{r eval=F, data_build_subBRCA}
+### breast_carcinoma_estrogen_receptor_status?
+ind.er <- cBRCA["er_status_by_ihc",]
+table(t(ind.er))
+
+### Create a dataset contain samples of BRCA
+### with positive/negative estrogen receptor status only
+er <- data.frame(t(ind.er))
+ypos <- subset(er, er_status_by_ihc == "Positive")
+yneg <- subset(er, er_status_by_ihc == "Negative")
+BRCApos <- subset(gsmBRCA, select = (rownames(ypos)))
+BRCAneg <- subset(gsmBRCA, select = (rownames(yneg)))
+subBRCA <- data.frame(cbind (BRCApos, BRCAneg))
+```
+
+The colnames of the example data matrices correspond to the sample types. Each name starts with TCGA. 
+
+```{r eval=T, colnames}
+#load("subBRCA.rda")
+head(colnames(subBRCA))
+```
+
+## Multiple Hypothesis Test for Differential Expressed Genes
+
+```{r eval=T, result2test}
+### Create indicator for testing
+status <- index01 <- c(rep(1, 785), rep(0, 230))
+
+par(mfrow=c(1,3))
+### ttest and wilcoxcon test result
+outresult <- result2tests(dmat=log2(subBRCA+1), index=index01)
+###
+
+#cat("\nproportion of p-values\n")
+tt1 <- outresult[[3]]
+wt2 <- outresult[[4]]
+
+### adjusted p-values
+pval.ttest <- as.matrix(outresult[[1]])
+pval.wtest <- as.matrix(outresult[[2]])
+rownames(pval.ttest) <- rownames(subBRCA)
+rownames(pval.wtest) <- rownames(subBRCA)
+
+### sorted the pvalue
+tpval.sort <- pval.ttest[order(pval.ttest),]
+wpval.sort <- pval.wtest[order(pval.wtest),]
+
+### the 10 genes with the smallest p-values
+tpval.sort[1:10]
+wpval.sort[1:10]
+
+par(mfrow=c(1,1))
+```
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrr}
+  \hline
+ & $<$=.005 & $<$=.05 & $<$=.5 \\ 
+  \hline
+1 & 0.60 & 0.70 & 0.88 \\ 
+   \hline
+\end{tabular}
+\caption{t test} 
+\end{table}
+
+The above table shows the proportion of genes has p-value less than given thresholds under two sample t tests for positive and negative receptor status.\\
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrr}
+  \hline
+ & $<$=.005 & $<$=.05 & $<$=.5 \\ 
+  \hline
+1 & 0.60 & 0.69 & 0.88 \\ 
+   \hline
+\end{tabular}
+\caption{wilcoxcon test} 
+\end{table}
+
+The above table shows the proportion of genes has p-value less than given thresholds under two sample wilcoxcon rank sum tests for positive and negative receptor status. We observe that the most of genes are significant differential expressed in the tests. The log scale histogram shows how the results from two tests are varied from each other. We show the results from Wilcoxon tests and t tests often agree with each other. However, the Wilcoxcon tests is more robust in certain genes. We prefer to used the Wilcoxcon tests for further analysis.\\ 
+
+## breast carcinoma estrogen receptor status Analysis
+
+We begin by examining the genes that are significant predictors for receptor status. We subset the 50 genes with the smallest p-values as covariates to predict estrogen receptor_status (positive vs. negative). Thus we first create a dataset that only contains the top 50 genes from the result of wilcoxcon test.
+
+```{r eval=F, cv.glm}
+### without including gene selection procedure in the cross validation 
+rowid <- names(wpval.sort)[1:50]
+gene50 <- subBRCA[rowid,]
+
+ex50 <- t(gene50)
+colnames(ex50) <- rowid
+
+# create a dataset with containing only five genes
+data50 <- data.frame (log2(ex50+1), status)
+fit.1 <- glm (status ~ ., family = binomial(link=logit), data=data50)
+cv.error <- cv.glm(data50, glmfit=fit.1, K=10)$delta
+
+### the error rate for prediction
+cv.error
+```
+
+Although the model with the 50 genes shows greater performance in predict the estrogen receptor status, we must include the gene selection procedure in cross validation step to show the true performance of logistic predictive model. We may also want to see if we only include the best 5 genes in the model that can also perform good predictability.  
+
+```{r eval=T, cv_f}
+### we need to use the CV to show the true performance of predicting models
+###############################################
+### 10 fold cross validation
+data.glm <- data.frame(log2(t(subBRCA)+1), status)
+k = 10
+
+outres <- cv.f(dat=data.glm, K=k, m=50)
+res50 <- outres[[1]]
+roc(res50$status2, res50$eta, plot=T)
+AUC <- roc.area(res50$status2, res50$eta)
+index.cv <- outres[[2]]
+
+alldata <- data.frame(data.glm[,index.cv], status)
+fitall <- glm (status ~ ., family = binomial(link=logit), data=alldata)
+summary(fitall)
+
+fit1 <- glm(status~ESR1 + GPR77 + FLJ45983 + ABAT  + ANXA9, family = binomial(link=logit), data=alldata )
+summary(fit1)
+###
+```
+We have applied the gene selection procedure in the cross validation steps to assess the predictability of fitted models. We further evaluated the performance for fitting the genes ranged from 5 to 75 genes in the models. We note that the ESR1, FLJ45983 and ABAT are the significant predictors for receptor status. However, the limitation of model is lacking of fitting multiple genes (greater 100) at the same time. We assume the genes are independent each other. We have not fitted the interaction among genes.  
+
+## Additional Models
+```{r eval=F}
+### for fitting different # of predictors in the models
+### m = # of predictors (genes)
+outres2 <- cv.f(dat=data.glm, K=k, m=10)
+outres3 <- cv.f(dat=data.glm, K=k, m=20)
+outres4 <- cv.f(dat=data.glm, K=k, m=25)
+outres5 <- cv.f(dat=data.glm, K=k, m=50)
+outres6 <- cv.f(dat=data.glm, K=k, m=75)
+outres1 <- cv.f(dat=data.glm, K=k, m=5)
+```
+
+```{r eval=F}
+outres1 <- cv.f(dat=data.glm, K=k, m=5)
+index.cv <- outres1[[2]]
+auc.val <- outres1[[3]]$A
+auc.val
+fitteddata <- data.frame(data.glm[,index.cv], status)
+fitm1 <- glm (status ~ ., family = binomial(link=logit), data=fitteddata)
+summary(fitm1)
+
+```
+
+we evaluates multiple models with different number of genes in the logistic regression model. All of models give nearly 95% AUC statistics with cross validation process. ESR1 and FLJ45983 are included in a list of significant genes that are predicting the response variable in all models. We have already mentioned that limitation of models are unable to fit large number covariates at the same time. We have done the preprocess by filtering out the genes with larger p$-$values. Thus we have lost certain amount of information. Since breast estrogen receptor status is highly differential by genes. We expected that a few genes are performing good prediction in models. We are not surprise to see that using a model with 5 genes performs as well as a model with 50 genes.
+
+
+# Analysis of BRCA samples with Lasso Models
+In addition to assessing the difference in selecting number of significant genes to predict the receptor status, we fit a LASSO model with/without using an optimal lambda and cross validation procedure. In general, We expect that this approach should also provide high value of AUC statistic.
+
+## glmnet function to fitting the Lasso regression model
+
+```{r eval=T, glmnet}
+
+# data.glm <- data.frame(log2(t(subBRCA)+1), status)
+# Create train set
+xt.lasso <- (log2(t(subBRCA)+1))
+# create test set
+test.x <- (log2(t(subBRCA)+1))
+
+fit.lasso <- glmnet(xt.lasso, status, family ="binomial", alpha=1)
+pred<-predict(fit.lasso,newx=test.x, s=c(.01), type="link")
+```
+
+we have nearly perfect prediction on using breast cancer data with AUC statistic = .9974. However, there are 6955 genes chosen to fit the data. It would be trivial that it may exist an over$-$fitting problem occurred in this scenario. 
+
+```{r eval=T, roc.plot}
+# Create a ROC curve for predictive value under a naive approach
+AUC.naive <- roc.area(status, pred)
+AUC.naive
+
+gname <- as.factor(colnames(data.glm[,-max(ncol(data.glm))]))
+
+# Corresponding genes
+beta.name<-gname[which(coef(fit.lasso, s=.01)!=0)]
+# Parameter estimates for genes
+beta.fit<-coef(fit.lasso, s=.01)[which(coef(fit.lasso, s=.01)!=0)]
+
+### numbers of significant genes
+length(beta.fit)
+```
+
+Hereby, we have not chosen the optimal tuning parameter $\lambda$ in this scenario. Setting $\lambda$ = .01, we have found that the AUC stat =.9974 with p value $<.0001$.
+
+Next, We use the cross validation technique that described in the section of logistic model to measure the predicting accuracy for LASSO model. 
+
+## cv.glmnet from glmnet R package
+
+```{r eval=T, cv.glmnet}
+set.seed(12358)
+## 10 fold cross validation without gene selection procedure
+cv.lasso <- cv.glmnet(xt.lasso, status, nfold=10, family="binomial", type.measure = "auc")
+plot(cv.lasso)
+
+cv.lasso$lambda.min
+
+# Given the optimal lambda value, we have the AUC value
+AUC <- max(cv.lasso$cvm)
+cat("\nSummary of AUC Statistic")
+AUC
+
+# Corresponding genes
+b.name<-gname[which(coef(cv.lasso, s="lambda.min")!=0)]
+# Parameter estimates for genes
+b.coef<-coef(cv.lasso)[which(coef(cv.lasso, s="lambda.min")!=0)]
+length(b.coef)
+b.name
+```
+
+Given the 10 fold cross validation in fitting Lasso model in an optimal lambda value, we have obtained the number of genes are significantly in predicting the breast estrogen receptor status. There are 9 genes as X1.2.SBSRNA4, A2MP1, AGRN, B3GNT6, CA13, DEK, DNASE1, ESR2, and GPR78.
+
+## nested cross validataion procedure (ncv.lasso)
+
+```{r eval=F, cv.lasso}
+### K fold cross validation with gene selection
+set.seed(125421)
+#par(mfrow=c(1,2))
+ncv.fit1 <- ncv.lasso (gex=data.glm, k1=5, k2=10, m=10000)
+### AUC statistic
+aucstat <- ncv.fit1[[3]]
+
+# PLot the ROC
+res <- ncv.fit1[[1]]
+par(mfrow=c(1,1))
+roc(res$status2, res[,2], plot=T, smooth=T, main=paste("ROC for fitting with m genes", sep=" " ))
+```
+
+Moreover, we evaluate the model with using nested cross validation procedure, which we perform the gene selection procedure in the cross validation. There are 5 genes are significant in predicting the estrogen receptor status under the optimal tuning parameter. we extend the cross validation procedure with a method of nested cross-validation approach to evaluate robustness of the LASSO model in predicting the breast estrogen receptor status for women. The nested cross valuation not only considers to pick the optimal lambda, but also evaluate the accuracy of prediction as the same time. The basic idea is that we implement a cross validation procedure in an inner loop to choose the optimal $\lambda$ value, then we make an outer loop function to fit the LASSO model at the optimal $\lambda$ and validate the error rate with another cross validation procedure. This method would set up strong penalty of fitting models. We would expect the AUC statistic would be lower than previous cross validation procedure. Hence, we can measure the true prediction power of LASSO model. 
+
+## Analysis the signficant genes with Deseq2 package
+
+```{r data_loading}
+##########################################################################
+########### breast_carcinoma_estrogen_receptor_status #####################
+##########################################################################
+### explore the data
+#data(subBRCA)
+gmatBRCA <- as.matrix(subBRCA)
+mean(subBRCA==0) #proportion of value=0 in first sample
+#sum of the samples for each gene and show proportion of 0 genes
+mean(rowSums(subBRCA)==0)
+```
+
+```{r DESeqDataSetFromMatrix}
+## convert to a DESeqDataSet object from a matrix
+library("DESeq2")
+typeInd <- factor(c(rep("Positive", 785), rep("negative", 230)))
+dds <- DESeqDataSetFromMatrix(subBRCA, data.frame(typeInd), design = ~ typeInd) # transfer the data matrix to DESEQ dataset
+dds
+
+ind <- which(rowSums(assay(dds)) > 10000)
+dds2 <- dds[ind,]
+
+dim(dds2)
+```
+
+```{r eval=F}
+## fit model
+dds2fit <- DESeq(dds2)
+```
+
+```{r eval=F, echo=F}
+#load("dds2fit.robj")
+load("res.rda")
+load("resMLE.rda")
+```
+
+
+```{r eval=F}
+## get results
+res <- results(dds2fit)
+```
+
+```{r eval=F}
+res <- res[order(res$padj),] ## sort results based on adjusted p-value
+res
+load("res.rda")
+head(res)[1:10]
+mcols(res)$description
+
+## summary of results
+summary(res)
+
+
+## p-value histograms
+par(mfrow=c(1,2))
+hist(res$pvalue)
+hist(res$padj)
+par(mfrow=c(1,1))
+
+## MA plot
+plotMA(res, main="DESeq2", ylim=c(-2,2))
+
+
+## compare with MLE estimates
+resMLE <- results(dds2fit, addMLE=TRUE)
+#save(resMLE, file="resMLE.rda")
+
+head(resMLE, 5)
+resMLE1 <- resMLE[order(resMLE$padj),]
+head(resMLE, 5)
+plotMA(resMLE, MLE=TRUE, main="unshrunken LFC", ylim=c(-2,2))
+
+## plot counts for a specific gene (here the one with min adjust p-value)
+plotCounts(dds2fit, gene=which.min(resMLE$padj), intgroup="typeInd")
+```
+
+In brief, we implemented the nested cross validation procedure and built several functions in R gdatest2fit package. This package is suitable to study the genes are significant in predicting the clinical outcomes. We demonstrate the an example with response variable to be breast cancer estrogen receptor status. We expect most of genes should be significant different between positive and negative groups. We use the AUC to measure the model performance. Even with the conservative cross validation technique, the LASSO model and the logistic predicting model with significant analysis are performing very well as we expect. We extended cross validation technique to nest gene selection procedure include the first m strongest statistical differential expression genes in the model for cross validation process. Hence, we can show that LASSO model is suitable to fitting large number of genes or predictors by simultaneously performing penalization and shrinkage process. We further compare the results from DESeq2 package with modeling count data with negative binomial distribution. The result of Lasso model shows that gene X1.2.SBSRNA4, A1BG.AS1, A2LD1, and A1BG are most significant genes for predicting breast cancer receptor status.
+
+# Session Info
+```{r session_info}
+sessionInfo()
+```
+
+

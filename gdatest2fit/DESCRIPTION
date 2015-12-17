@@ -1,0 +1,13 @@
+Package: gdatest2fit
+Type: Package
+Title: Perform row t test and row wilcoxcon test and fitting the logistic regression model with cross validataion
+Version: 0.00.14
+Date: 2015-12-16
+Description: This package provides tools to analyze the gene expression data. Based on reprocessed RNA-Seq data. It determines the most significant genes and identifies the most sigificant covariates to predict the bernoulli outcome
+Author: Chongshu Chen <chc158.chen@gmail.com>
+Maintainer: Chongshu Chen <chc158.chen@gmail.com>
+Depends: R (>= 3.2.0), Biobase (>= 2.22.0)
+Imports: boot, genefilter, pROC, verification, DESeq2, glmnet, Biobase
+VignetteBuilder: knitr
+Suggests: RUnit, knitr, rmarkdown, BiocGenerics
+License: GPL-3

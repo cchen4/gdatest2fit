@@ -1,0 +1,17 @@
+{
+    "contents" : "\\name{cv.f}\n\\alias{cv.f}\n\\title{\nA cross validation procedure for binomial responese variable and select m genes/covariates for cross validation\n}\n\\description{\n%%  ~~ A concise (1-5 lines) description of what the function does. ~~\nThis function requires on specifying the number of k folds and m covariates \\\\\nIt would generate the plots of ROC curve and AUC statistics\n}\n\n\\usage{\ncv.f(dat, K, m)\n}\n\\arguments{\n  \\item{dat}{a data matrix or frame that used to fit the glm/logit model with more than 2 covariates}\n  \\item{K}{a numerical value that is greater than 0 but less than # rows of data}\n  \\item{m}{a numerical value that is greater than 0 but can not be too large otherwise perfect seperation may occur}\n}\n\\value{\n  A data matrix of response and predicted values will be returned to be used for futher analysis, such as calculating the error rate/mse. If a response is bernoulli and predicted values will be probability for logistic model. A index of m fitted covariates will be returned and thus we can use the index to fit the model with a whole data.\n}\n\\author{Chongshu Chen}\n\\examples{\n  subBRCA1 <- matrix(rnorm(101500,50,5), ncol=1015)\n  status <-  c(rep(1, 785), rep(0, 230))\n  testdat <- data.frame(log2(t(subBRCA1)+1), status)\n  cv.result <- cv.f (dat=testdat, K=5, m=50)\n}\n\\keyword{crossvalidation}\n% Add one or more standard keywords, see file 'KEYWORDS' in the\n% R documentation directory.\n\\keyword{glm}\n",
+    "created" : 1450335631603.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4113074534",
+    "id" : "616ECA56",
+    "lastKnownWriteTime" : 1450316480,
+    "path" : "D:/Cloud/OneDrive/Documents/Coursework/Fall 2015/BST550 Genomic Data Analysis/GDA-Project/gdatest2fit/man/cv.f.Rd",
+    "project_path" : "man/cv.f.Rd",
+    "properties" : {
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "type" : "r_doc"
+}

@@ -1,0 +1,17 @@
+{
+    "contents" : "\\name{result2tests}\n\\alias{result2tests}\n%- Also NEED an '\\alias' for EACH other topic documented here.\n\\title{Perform row wilcoxcon test and row t test and then plot the p-values via histogram and scatter plot\n}\n\\description{\nThis function performs wilcoxcon rank sum tests and ttest for each row of data matrix/frame \\\\\nThis function returns adjusted p values with FDR method and create tables of proportions of lower p-values\n}\n\\usage{\nresult2tests(dmat, index)\n}\n\\arguments{\n  \\item{dmat}{a class of data frame or data matrix}\n  \\item{index}{a vector of indicator of zero and one to distinguish the samples for column vectors. It should be consisted value of 0 and 1}\n}\n\\value{\n  a set of p-values will be returned from wilcoxcon tests and ttest\\\\\n  the table of proportion that p values are less than .005, .05, .5 from both tests\n}\n\\author{Chongshu Chen}\n\\examples{\n  testdat <- matrix (rnorm(1000, 5, 2), ncol=100)\n  id <- rep(c(1,0), 50)\n  out <- result2tests (dmat=testdat, index=id)\n}\n\\keyword{rowWilcox}\n% Add one or more standard keywords, see file 'KEYWORDS' in the\n% R documentation directory.\n\\keyword{ttest}\n\\keyword{p-values}\n\\keyword{plot}\n\\keyword{histogram}\n\n",
+    "created" : 1450335610895.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4132888296",
+    "id" : "74CB9E41",
+    "lastKnownWriteTime" : 1450315906,
+    "path" : "D:/Cloud/OneDrive/Documents/Coursework/Fall 2015/BST550 Genomic Data Analysis/GDA-Project/gdatest2fit/man/result2tests.Rd",
+    "project_path" : "man/result2tests.Rd",
+    "properties" : {
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "type" : "r_doc"
+}
